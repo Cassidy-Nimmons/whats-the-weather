@@ -5,9 +5,14 @@ import path from 'path';
 class City {
   constructor(public id:string, public name: string) {}
 }
+//or instead
+//interfaceCity {
+//id:string;
+//name: string;
+//}
 
 class HistoryService {
-  private historyFilePath = path.resolve('data', 'searchHistory.json'); // Path to the searchHistory.json file
+  private historyFilePath = path.resolve('db/searchHistory.json'); // Path to the searchHistory.json file
 
   // Read the data from searchHistory.json
   private async read(): Promise<City[]> {
