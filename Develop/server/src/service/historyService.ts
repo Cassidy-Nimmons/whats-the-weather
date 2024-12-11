@@ -2,62 +2,83 @@ import fs from 'fs';
 import path from 'path';
 
 // Define the City interface
-class City { 
-name:string;
-id: string;
-
-constructor(name: string, id: string) {
-  this.name = name;
-  this.id = id;
-  }
+class City {
+  constructor(public name: string, public id: string) {}
 }
 
 class HistoryService {
-  private historyFilePath = path.resolve('db/searchHistory.json'); // Path to the searchHistory.json file
+  private dbPath = 'db/db.json';
 
-  // Read the data from searchHistory.json
-  private async read(): Promise<City[]> {
+  // Read cities from the database file
+  private async read(): Promise<string> {
     try {
-      const data = await fs.promises.readFile(this.historyFilePath, 'utf-8');
-      return JSON.parse(data);
-    } catch (err) {
-      console.error('Error reading the search history file:', err);
-      return []; // Return an empty array if the file does not exist or there is an error
+      const data = await fs.readFile(this.dbPath, { encoding: 'utf8', flag: 'a+' });
+      return data || '[]'; // Return an empty array if the file is empty
+    } catch (error) {
+      console.error('Error reading database file:', error);
+      throw new Error('Failed to read database file');
     }
   }
 
-  // Write updated cities to searchHistory.json
+  // Write cities to the database file
   private async write(cities: City[]): Promise<void> {
     try {
-      await fs.promises.writeFile(this.historyFilePath, JSON.stringify(cities, null, 2), 'utf-8');
-    } catch (err) {
-      console.error('Error writing to the search history file:', err);
+      await fs.writeFile(this.dbPath, JSON.stringify(cities, null, 2));
+    } catch (error) {
+      console.error('Error writing to database file:', error);
+      throw new Error('Failed to write to database file');
     }
   }
 
-  // Get the search history (list of cities)
-  async getSearchHistory(): Promise<City[]> {
-    return this.read();
+  // Get the list of cities
+  async getCities(): Promise<City[]> {
+    try {
+      const data = await this.read();
+      return JSON.parse(data);
+    } catch (error) {
+      console.error('Error parsing cities:', error);
+      return [];
+    }
   }
 
-  // Add a new city to the search history
-  async addCity(city: string): Promise<void> {
-    const cities = await this.read();
-    const newCity: City = { id: this.generateUniqueId(), name: city };
-    cities.push(newCity);
-    await this.write(cities);
+  // Add a new city
+  async addCity(cityName: string): Promise<City> {
+    if (!cityName) {
+      throw new Error('City name cannot be blank');
+    }
+
+    const newCity = new City(cityName, uuidv4());
+    try {
+      const cities = await this.getCities();
+
+      // Avoid adding duplicate city names
+      if (cities.some((city) => city.name.toLowerCase() === cityName.toLowerCase())) {
+        throw new Error('City already exists in history');
+      }
+
+      const updatedCities = [...cities, newCity];
+      await this.write(updatedCities);
+      return newCity;
+    } catch (error) {
+      console.error('Error adding city:', error);
+      throw new Error('Failed to add city');
+    }
   }
 
-  // Remove a city from the search history
-  async removeCity(id: string): Promise<void> {
-    const cities = await this.read();
-    const updatedCities = cities.filter(city => city.id !== id);
-    await this.write(updatedCities);
-  }
+  // Remove a city by ID
+  async removeCity(cityId: string): Promise<void> {
+    if (!cityId) {
+      throw new Error('City ID is required');
+    }
 
-  // Generate a unique ID for each city (this can be a simple string or UUID)
-  private generateUniqueId(): string {
-    return Date.now().toString(); // A simple unique ID based on timestamp
+    try {
+      const cities = await this.getCities();
+      const updatedCities = cities.filter((city) => city.id !== cityId);
+      await this.write(updatedCities);
+    } catch (error) {
+      console.error('Error removing city:', error);
+      throw new Error('Failed to remove city');
+    }
   }
 }
 
