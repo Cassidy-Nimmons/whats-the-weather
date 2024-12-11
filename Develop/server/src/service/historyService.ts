@@ -2,14 +2,15 @@ import fs from 'fs';
 import path from 'path';
 
 // Define the City interface
-class City {
-  constructor(public id:string, public name: string) {}
+class City { 
+name:string;
+id: string;
+
+constructor(name: string, id: string) {
+  this.name = name;
+  this.id = id;
+  }
 }
-//or instead
-//interfaceCity {
-//id:string;
-//name: string;
-//}
 
 class HistoryService {
   private historyFilePath = path.resolve('db/searchHistory.json'); // Path to the searchHistory.json file
