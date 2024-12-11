@@ -1,5 +1,6 @@
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs/promises';
+import { v4 as uuidv4 } from 'uuid';
+
 
 // Define the City interface
 class City {
